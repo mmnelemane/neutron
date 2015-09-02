@@ -229,18 +229,13 @@ class DhcpAgent(manager.Manager):
 
         enable_metadata = self.dhcp_driver_cls.should_enable_metadata(
                 self.conf, network)
-        dhcp_network_enabled = False
 
-        for subnet in network.subnets:
-            if subnet.enable_dhcp:
-                if self.call_driver('enable', network):
-                    dhcp_network_enabled = True
-                    self.cache.put(network)
-                break
+        if self.call_driver('enable', network):
+            self.cache.put(network)
 
-        if enable_metadata and dhcp_network_enabled:
+        if enable_metadata:
             for subnet in network.subnets:
-                if subnet.ip_version == 4 and subnet.enable_dhcp:
+                if subnet.ip_version == 4:
                     self.enable_isolated_metadata_proxy(network)
                     break
 
