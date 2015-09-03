@@ -91,7 +91,6 @@ def register_interface_driver_opts_helper(conf):
 def register_use_namespaces_opts_helper(conf):
     conf.register_opts(USE_NAMESPACES_OPTS)
 
-
 def get_root_helper(conf):
     root_helper = conf.AGENT.root_helper
     if root_helper != 'sudo':

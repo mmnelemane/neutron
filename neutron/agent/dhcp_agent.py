@@ -63,6 +63,12 @@ class DhcpAgent(manager.Manager):
                    default='$state_path/metadata_proxy',
                    help=_('Location of Metadata Proxy UNIX domain '
                           'socket')),
+        # This additional flag serves helpful if some of the tenant networks
+        # would want to use external dhcp services while some use the dhcp 
+        # agent.
+        cfg.BoolOpt('use_external_dhcp', default=False,
+                   help=_('Specify if network uses external dhcp service and'
+                       'requires access to MD proxy.')),
     ]
 
     def __init__(self, host=None):
@@ -229,13 +235,21 @@ class DhcpAgent(manager.Manager):
 
         enable_metadata = self.dhcp_driver_cls.should_enable_metadata(
                 self.conf, network)
+        dhcp_network_enabled = False
 
-        if self.call_driver('enable', network):
-            self.cache.put(network)
+        for subnet in network.subnets:
+            if subnet.enable_dhcp or self.conf.use_external_dhcp:
+                 if self.call_driver('enable', network):
+                     dhcp_network_enabled = True
+                     self.cache.put(network)
+                 break
 
-        if enable_metadata:
+        if enable_metadata and (self.conf.use_external_dhcp or
+                dhcp_network_enabled):
             for subnet in network.subnets:
-                if subnet.ip_version == 4:
+                if subnet.ip_version == 4 and \
+                    (self.conf.use_external_dhcp or
+                        dhcp_network_enabled):
                     self.enable_isolated_metadata_proxy(network)
                     break
 

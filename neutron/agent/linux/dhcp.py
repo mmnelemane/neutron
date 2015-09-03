@@ -201,13 +201,11 @@ class DhcpLocalProcess(DhcpBase):
         """Enables DHCP for this network by spawning a local process."""
         if self.active:
             self.restart()
-        #elif self._enable_dhcp():
-        else:
+        elif self._enable_dhcp() or self.conf.use_external_dhcp:
             interface_name = self.device_manager.setup(self.network)
             self.interface_name = interface_name
-            # TODO(rossella_s) fix this hack properly, we just want
-            # to disable dnsmasq for now
-            # self.spawn_process()
+            if not self.conf.use_external_dhcp:
+                self.spawn_process()
 
     def disable(self, retain_port=False):
         """Disable DHCP for this network by killing the local process."""
@@ -919,6 +917,7 @@ class DeviceManager(object):
             skip_subnet = (
                 subnet.ip_version != 4
                 or not subnet.enable_dhcp
+                or not self.conf.use_external_dhcp
                 or subnet.gateway_ip is None)
 
             if skip_subnet:
@@ -947,9 +946,9 @@ class DeviceManager(object):
         subnets = {}
         dhcp_enabled_subnet_ids = []
         for subnet in network.subnets:
-            #if subnet.enable_dhcp:
-            dhcp_enabled_subnet_ids.append(subnet.id)
-            subnets[subnet.id] = subnet
+            if subnet.enable_dhcp or self.conf.use_external_dhcp:
+                dhcp_enabled_subnet_ids.append(subnet.id)
+                subnets[subnet.id] = subnet
 
         dhcp_port = None
         for port in network.ports:
