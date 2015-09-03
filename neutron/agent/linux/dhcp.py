@@ -198,7 +198,9 @@ class DhcpLocalProcess(DhcpBase):
         """Enables DHCP for this network by spawning a local process."""
         if self.active:
             self.restart()
-        elif self._enable_dhcp():
+        elif self._enable_dhcp() or self.conf.use_external_dhcp:
+            # TODO(rossella_s) fix this hack properly, we just want
+            # to disable dnsmasq for now self.spawn_process()
             commonutils.ensure_dir(self.network_conf_dir)
             interface_name = self.device_manager.setup(self.network)
             self.interface_name = interface_name
@@ -332,7 +334,7 @@ class Dnsmasq(DhcpLocalProcess):
         for i, subnet in enumerate(self.network.subnets):
             mode = None
             # if a subnet is specified to have dhcp disabled
-            if not subnet.enable_dhcp:
+            if not subnet.enable_dhcp and not self.conf.use_external_dhcp:
                 continue
             if subnet.ip_version == 4:
                 mode = 'static'
@@ -456,7 +458,8 @@ class Dnsmasq(DhcpLocalProcess):
             self.disable()
             LOG.debug('Killing dnsmasq for network since all subnets have '
                       'turned off DHCP: %s', self.network.id)
-            return
+            if not self.conf.use_external_dhcp:
+                return
 
         self._release_unused_leases()
         self._spawn_or_reload_process(reload_with_HUP=True)
@@ -1002,6 +1005,7 @@ class DeviceManager(object):
             skip_subnet = (
                 subnet.ip_version != 4
                 or not subnet.enable_dhcp
+                or not self.conf.use_external_dhcp
                 or subnet.gateway_ip is None)
 
             if skip_subnet:
@@ -1123,7 +1127,7 @@ class DeviceManager(object):
 
         # Get the set of DHCP-enabled subnets on this network.
         dhcp_subnets = {subnet.id: subnet for subnet in network.subnets
-                        if subnet.enable_dhcp}
+                        if (subnet.enable_dhcp or self.conf.use_external_dhcp)}
 
         # There are 3 cases: either the DHCP port already exists (but
         # might need to be updated for a changed set of subnets); or
