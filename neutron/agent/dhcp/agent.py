@@ -235,11 +235,9 @@ class DhcpAgent(manager.Manager):
                     self.cache.put(network)
                 break
 
-        if enable_metadata and (dhcp_network_enabled or
-                self.conf.use_external_dhcp):
+        if enable_metadata and dhcp_network_enabled:
             for subnet in network.subnets:
-                if subnet.ip_version == 4 and (subnet.enable_dhcp or
-                        self.conf.use_external_dhcp):
+                if subnet.ip_version == 4 and subnet.enable_dhcp:
                     self.enable_isolated_metadata_proxy(network)
                     break
 

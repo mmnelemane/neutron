@@ -31,11 +31,7 @@ DHCP_AGENT_OPTS = [
                        "dedicated network. Requires "
                        "enable_isolated_metadata = True")),
     cfg.IntOpt('num_sync_threads', default=4,
-               help=_('Number of threads to use during sync process.')),
-    # This additional flag serves helpful if some of the tenant networks would
-    # want to use external dhcp services while some use the dhcp agent.
-    cfg.BoolOpt('use_external_dhcp', default=False,
-               help=_("Allow MD proxy when DHCP not enabled but external DHCP is used.")),
+               help=_('Number of threads to use during sync process.'))
 ]
 
 DHCP_OPTS = [
